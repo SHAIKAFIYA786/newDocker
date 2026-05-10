@@ -1,40 +1,76 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
+const path = require("path");
 const MongoClient = require("mongodb").MongoClient;
+const cors = require("cors");
 
-const PORT = 5050;
-
+const PORT = process.env.PORT || 5050;
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static("public"));
+app.use(cors());
 
-const MONGO_URL = "mongodb+srv://Shaik_Afiya:Afiya0786%40@cluster0.n29rwa0.mongodb.net/apnacollege-db";
+const MONGO_URL = process.env.MONGO_URL;
 const client = new MongoClient(MONGO_URL);
 
-let db;
-
-// connect once
 async function connectDB() {
-    await client.connect();
-    db = client.db("apnacollege-db");
-    console.log("MongoDB connected");
+    try {
+        await client.connect();
+        console.log("MongoDB connected");
+    } catch (err) {
+        console.error(err);
+    }
 }
 
 connectDB();
 
-// GET all users
+//GET all users
 app.get("/getUsers", async (req, res) => {
-    const data = await db.collection("users").find({}).toArray();
-    res.send(data);
+    try {
+        const db = client.db("apnacollege-db");
+
+        const data = await db
+            .collection("users")
+            .find({})
+            .toArray();
+
+        res.status(200).send(data);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send({
+            error: "Internal Server Error"
+        });
+    }
 });
 
-// POST new user
+//POST new user
 app.post("/addUser", async (req, res) => {
-    const userObj = req.body;
-    const result = await db.collection("users").insertOne(userObj);
-    res.send(result);
+    try {
+        const userObj = req.body;
+
+        const db = client.db("apnacollege-db");
+
+        const data = await db
+            .collection("users")
+            .insertOne(userObj);
+
+        console.log(data);
+
+        res.status(201).send({
+            message: "User added successfully"
+        });
+
+    } catch (err) {
+        console.error(err);
+
+        res.status(500).send({
+            error: "Internal Server Error"
+        });
+    }
 });
 
-// start server
+
 app.listen(PORT, () => {
     console.log(`server running on port ${PORT}`);
 });
